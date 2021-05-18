@@ -56,7 +56,7 @@ let data = [ // 原始的 ADC 值
     38, 39, 41, 42, 45, 47, 49, 51, 53, 55, 58, 60, 62, 66, 69, 71, 74, 77, 80, 83, 87, 90, 94, 98, 101, 113, 120, 126, 131, 136, 140, 145, 149, 153, 158, 161, 166, 170, 173, 178, 181, 185, 189, 193, 200, 208, 214, 219, 225, 229, 233, 237, 242, 257, 262, 267, 272, 277, 281, 285, 291, 297, 301, 305, 309, 315, 319, 321, 324,
 ];
 let labels = [ // 手動記錄的溫度值
-    75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5,
+    75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52,  51,  50,  49,  48,  47,  46,  45,  44,  43,  42,  41,  40,  39,  38,  37,  36,  35,  34,  33,  32,  31,  30,  29,  28,  27,  26,  25,  24,  23,  20,  19,  18,  17,  16,  15,  14,  13,  12,  11,  10,   9,   8,   7,   6,   5,
 ];
 
 // ADC 平均值
@@ -86,31 +86,43 @@ var trainer = new convnetjs.SGDTrainer(net, {
     l2_decay: 0.001
 });
 
-// 訓練
-var netx = new convnetjs.Vol(1, 1, 1);
-for (var ep = 0; ep < 50; ep++) { // 訓練期數
-    avloss = 0.0;
-    for (var iters = 0; iters < 50; iters++) {
-        for (var ix = 0; ix < N; ix++) { // 一一加入資料訓練
-            netx.w[0] = dataNorm[ix];
-            var stats = trainer.train(netx, [labelsNorm[ix]]);
-            avloss += stats.loss; // 累計損失值
-        }
-    }
-    avloss /= N * iters; // 每訓練 50 回計算平均損失值
-    console.log(avloss);
-}
+// 可讓使用者輸入訓練期數的物件
+const readline = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-netJSON = net.toJSON(); // 將神經網路轉成 JSON 格式
-fs.writeFileSync( // 將神經網路存檔
-    './temp_model.json',
-    JSON.stringify(netJSON)
-);
-console.log('successfully writing model file.');
-fs.writeFileSync( // 將資料集的平均值/標準差存檔
-    './temp_mean_stddev.txt',
-    "" + dataMean + "\n" + dataStdDev
-);
-console.log("means:\t" + dataMean);
-console.log("stddev:\t" + dataStdDev);
-console.log('Successfully writing mean/stddev value.')
+var epochs = 0;
+// 讓使用者輸入訓練期數
+readline.question('epochs?\t\t', epochStr => {
+    epochs = parseInt(epochStr);
+    readline.close();
+
+    // 訓練
+    var netx = new convnetjs.Vol(1, 1, 1);
+    for (var ep = 0; ep < epochs; ep++) { // 訓練期數
+        avloss = 0.0;
+        for (var iters = 0; iters < 50; iters++) {
+            for (var ix = 0; ix < N; ix++) { // 一一加入資料訓練
+                netx.w[0] = dataNorm[ix];
+                var stats = trainer.train(netx, [labelsNorm[ix]]);
+                avloss += stats.loss; // 累計損失值
+            }
+        }
+        avloss /= N * iters; // 每訓練 50 回計算平均損失值
+        console.log(`${ep}:${avloss}`);
+    }
+
+    var model = {};
+    model["netJSON"] = net.toJSON(); // 將神經網路轉成 JSON 格式
+    model["mean"] = dataMean;
+    model["stddev"] = dataStdDev;
+
+    fs.writeFileSync( // 將神經網路存檔
+        './temp_model.json',
+        JSON.stringify(model)
+    );
+    console.log('successfully writing model file.');
+    console.log("means:\t" + dataMean);
+    console.log("stddev:\t" + dataStdDev);
+});

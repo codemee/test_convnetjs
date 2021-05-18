@@ -1,23 +1,17 @@
 var convnetjs = require("./convnet-min.js");
 const fs = require('fs')
 
-var netJSON = JSON.parse( // 從檔案讀取 JSON 格式的模型
+var model = JSON.parse( // 從檔案讀取 JSON 格式的模型
     fs.readFileSync('./temp_model.json'),
     {
         encoding:"UTF8"
-    });
-var net = new convnetjs.Net(); // 建新網路
-net.fromJSON(netJSON);         // 從 JSON 格式模型復原各層網路
+    }
+);
 console.log("successfully reading model file.");
-var strMeanStdDev = fs.readFileSync( // 讀取存檔的平均值/標準差
-    'temp_mean_stddev.txt',
-    {
-        encoding:"UTF8"
-    });
-console.log("successfully reading mean/stddev file.");
-arrMeanStdDev = strMeanStdDev.split('\n');
-var dataMean = parseFloat(arrMeanStdDev[0]);   // 第 1 行是平均值
-var dataStdDev = parseFloat(arrMeanStdDev[1]); // 第 2 行是標準差
+var net = new convnetjs.Net(); // 建新網路
+net.fromJSON(model["netJSON"]);         // 從 JSON 格式模型復原各層網路
+var dataMean = model["mean"];   // 第 1 行是平均值
+var dataStdDev = model["stddev"]; // 第 2 行是標準差
 console.log("means:\t\t\t" + dataMean);
 console.log("stddev:\t\t\t" + dataStdDev);
 
@@ -31,7 +25,6 @@ var adcVal = 0;
 // 讓使用者輸入 ADC 值
 readline.question('ADC value?\t\t', adcValStr => {
     adcVal = parseFloat(adcValStr);
-    console.log(`ADC value:\t\t${adcVal}`);
     readline.close();
 
     // evaluate on a datapoint. We will get a 1x1x1 Vol back, so we get the
